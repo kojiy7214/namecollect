@@ -129,57 +129,26 @@ export let CustomerRemix = class {
         },
         industryKindCode: {
             default: `
-            (
-                SELECT user_message 
-                FROM system_message_ja_jp 
-                WHERE message_key = (
-                    SELECT es.select_data 
-                    FROM ext_select es 
-                    WHERE es.extension_code = 340 
-                      AND es.select_code = INDUSTRY_KIND_CODE
-                )
-            ) AS industryKindCode
-            `,
+            (SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
+                (SELECT es.select_data FROM @tenant.ext_select es WHERE es.extension_code = 340 AND es.select_code = INDUSTRY_KIND_CODE)
+            ) AS industryKindCode`,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 340,
             type: "select"
         },
         customerLevel: {
-            default: `
-            (
-                SELECT user_message 
-                FROM system_message_ja_jp 
-                WHERE message_key = (
-                    SELECT cl.level_name 
-                    FROM customer_level cl 
-                    WHERE cl.customer_level = customer.customer_level
-                )
-            ) AS customerLevel
-            `,
+            default: `(SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
+                        (SELECT cl.level_name FROM @tenant.customer_level cl WHERE cl.customer_level = customer.customer_level)
+                    ) AS customerLevel`,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 341,
             type: "sql",
-            sql: `
-            SELECT customer_level AS val
-            FROM customer_level 
-            LEFT JOIN system_message_ja_jp 
-                ON customer_level.level_name = message_key 
-            WHERE default_message = @val;
-            `
+            sql: `SELECT customer_level AS val FROM @tenant.customer_level LEFT JOIN @tenant.system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = @val;`
         },
         customerRankCode: {
-            default: `
-            (
-                SELECT user_message 
-                FROM system_message_ja_jp 
-                WHERE message_key = (
-                    SELECT es.select_data 
-                    FROM ext_select es 
-                    WHERE es.extension_code = 339 
-                      AND es.select_code = CUSTOMER_RANK_CODE
-                )
-            ) AS customerRankCode
-            `,
+            default: `(SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
+                        (SELECT es.select_data FROM @tenant.ext_select es WHERE es.extension_code = 339 AND es.select_code = CUSTOMER_RANK_CODE)
+            ) AS customerRankCode`,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 339,
             type: "select"
@@ -196,6 +165,7 @@ export let CustomerRemix = class {
             default: `
             SELECT 
                 col_name AS ext_colname,
+                'customer' as ext_belong,
                 CASE
                     WHEN ex_type = 0 THEN 'text'
                     WHEN ex_type = 1 THEN 'select'
@@ -256,6 +226,29 @@ export let CustomerRemix = class {
         return CustomerRemix.alias2DB
     }
 
+    async resolveUndefinedColumn(col){
+        let sql = this.alias2DB.extension.default.replaceAll('@tenant', this.tenantId).replaceAll('@apicode', col)
+        let retval 
+        try{
+            let result = await this.query(sql)
+            if ( ! result ){
+                retval = undefined
+            }else{
+                if ( result.ext_type == 'select' ){
+                    retval = `(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) ${col}`
+                }else if ( result.ext_type == 'checkbox'){
+                    retval = undefined
+                }else{
+                    retval = `${result.ext_belong}.${result.ext_colname}`
+                }
+            }
+        }catch(e){
+            retval = undefined
+        }
+
+        return retval
+    }
+
     async query(q) {
         //QUERY内の置換対象文字列を置き換え
         for ( let key in CustomerRemix.alias2DB ){
@@ -266,6 +259,7 @@ export let CustomerRemix = class {
             rep_val;
             q = q.replaceAll("${" + key + "}", replaceTo)
             q = q.replaceAll("${" + key + "_default}", CustomerRemix.alias2DB[key].value)
+            q = q.replaceAll('@tenant', this.tenantId)
         }
 
         //apply extensions

@@ -32,10 +32,6 @@ export let BusinessPersonRemix = class {
             apicode: 918,
             type: "text"
         }, 
-        companyName:{
-            default:"CAST(customer.company_name AS VARCHAR(MAX)) as companyName",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
-        }, 
         department:{
             default:"CAST(business_person.depart_name AS VARCHAR(MAX)) as department",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
@@ -49,7 +45,7 @@ export let BusinessPersonRemix = class {
             type: "text"
         }, 
         email:{
-            default:"CAST(business_person.email AS VARCHAR(MAX)) as email",
+            default:"CAST(business_person.e_mail AS VARCHAR(MAX)) as email",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 914,
             type: "text"
@@ -134,13 +130,13 @@ export let BusinessPersonRemix = class {
             type: "text"
         },
         postTypeCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 939 and es.select_code = POST_TYPE_CODE)) postTypeCode",
+            default:"(select user_message from @tenant.system_message_ja_jp where message_key = (select es.select_data from @tenant.ext_select es where es.extension_code = 939 and es.select_code = POST_TYPE_CODE)) postTypeCode",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 939,
             type: "select"
         },
         departTypeCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 940 and es.select_code = DEPART_TYPE_CODE)) postTypeCode",
+            default:"(select user_message from @tenant.system_message_ja_jp where message_key = (select es.select_data from @tenant.ext_select es where es.extension_code = 940 and es.select_code = DEPART_TYPE_CODE)) postTypeCode",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 940,
             type: "select"
@@ -155,6 +151,10 @@ export let BusinessPersonRemix = class {
             default:"CAST(customer.business_category AS VARCHAR(MAX)) as businessCategory",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
+        companyName:{
+            default:"CAST(customer.company_name AS VARCHAR(MAX)) as companyName",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+        }, 
         companyKana:{
             default:"CAST(customer.company_kana AS VARCHAR(MAX)) as companyKana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
@@ -221,25 +221,25 @@ export let BusinessPersonRemix = class {
         },
         industryKindCode: {
             default: `
-            (SELECT user_message FROM system_message_ja_jp WHERE message_key = 
-                (SELECT es.select_data FROM ext_select es WHERE es.extension_code = 340 AND es.select_code = INDUSTRY_KIND_CODE)
+            (SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
+                (SELECT es.select_data FROM @tenant.ext_select es WHERE es.extension_code = 340 AND es.select_code = INDUSTRY_KIND_CODE)
             ) AS industryKindCode`,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 340,
             type: "select"
         },
         customerLevel: {
-            default: `(SELECT user_message FROM system_message_ja_jp WHERE message_key = 
-                        (SELECT cl.level_name FROM customer_level cl WHERE cl.customer_level = customer.customer_level)
+            default: `(SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
+                        (SELECT cl.level_name FROM @tenant.customer_level cl WHERE cl.customer_level = customer.customer_level)
                     ) AS customerLevel`,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 341,
             type: "sql",
-            sql: `SELECT customer_level AS val FROM customer_level LEFT JOIN system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = @val;`
+            sql: `SELECT customer_level AS val FROM @tenant.customer_level LEFT JOIN @tenant.system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = @val;`
         },
         customerRankCode: {
-            default: `(SELECT user_message FROM system_message_ja_jp WHERE message_key = 
-                        (SELECT es.select_data FROM ext_select es WHERE es.extension_code = 339 AND es.select_code = CUSTOMER_RANK_CODE)
+            default: `(SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
+                        (SELECT es.select_data FROM @tenant.ext_select es WHERE es.extension_code = 339 AND es.select_code = CUSTOMER_RANK_CODE)
             ) AS customerRankCode`,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 339,
@@ -257,23 +257,27 @@ export let BusinessPersonRemix = class {
             default: `
 select 
  col_name as ext_colname,
-case
- when ex_type = 0 then 'text'
- when ex_type = 1 then 'select'
- when ex_type = 2 then 'date'
- when ex_type = 3 then 'num'
- when ex_type = 4 then 'text'
- when ex_type = 5 then 'decimal'
- when ex_type = 6 then 'checkbox'
- when ex_type = 7 then 'text'
- when ex_type = 8 then 'text'
- when ex_type = 9 then 'text'
- when ex_type = 11 then 'date'
- else 'err'
-end ext_type
+    case
+    when ex_belong = 3 then 'customer'
+    when ex_belong = 9 then 'business_person'
+    end ext_belong,
+    case
+    when ex_type = 0 then 'text'
+    when ex_type = 1 then 'select'
+    when ex_type = 2 then 'date'
+    when ex_type = 3 then 'num'
+    when ex_type = 4 then 'text'
+    when ex_type = 5 then 'decimal'
+    when ex_type = 6 then 'checkbox'
+    when ex_type = 7 then 'text'
+    when ex_type = 8 then 'text'
+    when ex_type = 9 then 'text'
+    when ex_type = 11 then 'date'
+    else 'err'
+    end ext_type
 from @tenant.extension_info 
 where
-	ex_belong = 9
+	(ex_belong = 9 or ex_belong = 3)
 	and CAST(extension_code AS NVARCHAR(MAX)) = '@apicode';        
             `
         }
@@ -318,6 +322,29 @@ where
         return BusinessPersonRemix.alias2DB
     }
 
+    async resolveUndefinedColumn(col){
+        let sql = this.alias2DB.extension.default.replaceAll('@tenant', this.tenantId).replaceAll('@apicode', col)
+        let retval 
+        try{
+            let result = await this.query(sql)
+            if ( ! result ){
+                retval = undefined
+            }else{
+                if ( result.ext_type == 'select' ){
+                    retval = `(select user_message from @tenant.system_message_ja_jp where message_key = (select es.select_data from @tenant.ext_select es where es.extension_code = ${col} and es.select_code = ${result.ext_colname})) ${col}`
+                }else if ( result.ext_type == 'checkbox'){
+                    retval = undefined
+                }else{
+                    retval = `${result.ext_belong}.${result.ext_colname}`
+                }
+            }
+        }catch(e){
+            retval = undefined
+        }
+
+        return retval
+    }
+
     async query(q) {
         //QUERY内の置換対象文字列を置き換え
         for ( let key in BusinessPersonRemix.alias2DB ){
@@ -346,8 +373,8 @@ where
 
             //modify alias2DB
             BusinessPersonRemix.alias2DB[apicode] ={
-                default:`business_person.${result.ext_colname}::text as "${ext[1]}"`,
-                value: `business_person.${result.ext_colname}::text as "${ext[1]}"`,
+                default: `CAST(business_person.${result.ext_colname} AS VARCHAR(MAX)) AS "${ext[1]}"`,
+                value: `CAST(business_person.${result.ext_colname} AS VARCHAR(MAX)) AS "${ext[1]}"`,
                 apicode: ext[1],
                 type: result.ext_type
             }

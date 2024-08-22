@@ -108,9 +108,9 @@ ${function fn(){
         let retval = ''
         for ( let e of Object.keys(this.normparam) ){
             let map = this.normparam[e].map
-            let sync = true
+            let sync = 1
             for ( let m of map){
-                retval = retval + `('${this.provider}', '${this.target}', '${e}', '${m}', '${JSON.stringify(this.normparam[e].opt)}'::jsonb, ${sync}, '${this.tenantId}'),` + "\r\n"
+                retval = retval + `('${this.provider}', '${this.target}', '${e}', '${m}', '${JSON.stringify(this.normparam[e].opt)}', ${sync}, '${this.tenantId}'),` + "\r\n"
                 sync = false
             }
         }
