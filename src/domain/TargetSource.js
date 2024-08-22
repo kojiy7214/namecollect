@@ -30,15 +30,13 @@ export let TargetSource = class{
     async getSyncCols(tenant){
         let retval = {}
         let sql = `
-set search_path to 'ncs';
-
 SELECT DISTINCT
 	tname
 FROM
-	columnmap
+	ncs.columnmap
 WHERE
 	tenant='${tenant}'
-    and target = '${this.targetName}' and sync = true        
+    and target = '${this.targetName}' and sync = 1        
 `
 
         let result = await NCSDao.getInstance().query(sql)
@@ -56,16 +54,20 @@ WHERE
         return retval
     }
 
+    /**
+     * idmapの更新
+     * @param {*} record 
+     * @param {*} tenantId 
+     */
     async updateIdMap(record, tenantId){
+        //編集
         let  modified = async function(tid, listname, value, tenant){
             let sql = `
-SET search_path to 'ncs';
-
-UPDATE idmap
+UPDATE ncs.idmap
 SET 
     targetlist='{${listname.map(e => `"${e}"`).join(',')}}',
     targetstatus='MODIFIED',
-    targetvalue='{"record":${JSON.stringify(value)}, "timestamp":${Date.now()}}'::jsonb
+    targetvalue='{"record":${JSON.stringify(value)}, "timestamp":${Date.now()}}'
 WHERE
     tenant='${tenant}'
     and tid='${tid}'
@@ -73,11 +75,10 @@ WHERE
             await NCSDao.getInstance().execute(sql)
         }
 
+        //削除
         let deleted = async function(tid, tenant){
             let sql = `
-SET search_path to 'ncs';
-
-UPDATE idmap
+UPDATE ncs.idmap
 SET 
     targetstatus='DELETED'
 WHERE
@@ -87,11 +88,10 @@ WHERE
             await NCSDao.getInstance().execute(sql)
         }
 
+        //統合
         let integrated = async function(tid, toid, tenant){
             let sql = `
-SET search_path to 'ncs';
-
-UPDATE idmap
+UPDATE ncs.idmap
 SET 
     tid='${toid}'
 WHERE

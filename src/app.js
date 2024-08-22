@@ -156,6 +156,7 @@ app.post('/:tenantId/nameCollection/v1/getIdmap', async function (req, res) {
     }
 })
 
+// 連携対象となっているクエリ側のIDをすべて返却する
 app.get('/:tenantId/nameCollection/v1/queryIds', async function (req, res) {
     let status = 'SUCCESS'
     try{

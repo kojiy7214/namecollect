@@ -72,14 +72,13 @@ export let ColumnMap = class{
         condition = condition ? condition : '1=1'
         
         let sql = `
-SET search_path TO 'ncs';
 SELECT
     pname
     ,tname
     ,popt
     ,sync
 FROM
-    columnmap
+    ncs.columnmap
 WHERE
     provider = '${this.provider}'
     and target = '${this.target}'
@@ -94,16 +93,16 @@ WHERE
     }
 
     async save(){
+        //削除
         let remove = `
-SET search_path TO 'ncs';
-DELETE FROM columnmap
+DELETE FROM ncs.columnmap
 WHERE provider = '${this.provider}' and target = '${this.target}' and tenant = '${this.tenantId}'
         `
         await NCSDao.getInstance().execute(remove)
 
+        //登録
         let insert = `
-SET search_path TO 'ncs';
-INSERT INTO columnmap (provider, target, pname, tname, popt, sync, tenant)        
+INSERT INTO ncs.columnmap (provider, target, pname, tname, popt, sync, tenant)        
 VALUES 
 ${function fn(){
         let retval = ''

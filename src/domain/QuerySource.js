@@ -1,6 +1,7 @@
 import { IdMap } from './IdMap.js'
 import { ColumnMap } from './ColumnMap.js'
 
+//MA側の定義
 export let QuerySource = class{
     static instanceMap = {}
 
@@ -50,6 +51,12 @@ export let QuerySource = class{
         return this.colMapHolder[target]
     }
 
+    /**
+     * Idmapをロードする
+     * @param {*} target ターゲットシート
+     * @param {*} condition 
+     * @param {*} page 
+     */
     async loadIdMap(target, condition, page){
         this.idMapHolder[target] = new IdMap(this.provider, target, this.tenantId)
         await this.idMapHolder[target].load(condition, page)

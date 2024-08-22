@@ -68,12 +68,10 @@ export let SQLBuilder = class{
     toString(){
         let retval =
 `
-SET search_path to '${this._schema}';
-
 SELECT
     ${this.select.join('\r\n    ,')}
 FROM
-    ${this.from}
+    ${this._schema}.${this.from}
 WHERE
     ${this.condition.join('\r\n    and ')}
 ORDER BY

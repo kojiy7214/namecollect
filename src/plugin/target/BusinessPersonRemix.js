@@ -1,9 +1,10 @@
-import pg from 'pg'
+// import pg from 'pg'
+import mssql from 'mssql'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
 import log4js from 'log4js'
 
-const { Pool } = pg
+// const { Pool } = pg
 
 //log4js.configure(Config.getInstance().logs)
 
@@ -242,8 +243,6 @@ export let BusinessPersonRemix = class {
         },
         extension:{
             default: `
- set search_path to '@tenant';
-
 select 
  col_name as ext_colname,
 case
@@ -260,10 +259,10 @@ case
  when ex_type = 11 then 'date'
  else 'err'
 end ext_type
-from extension_info 
+from @tenant.extension_info 
 where
 	ex_belong = 9
-	and extension_code::text = '@apicode'        
+	and CAST(extension_code AS NVARCHAR(MAX)) = @apicode;        
             `
         }
     }
@@ -275,18 +274,23 @@ where
         return new BusinessPersonRemix(tenatId)
     }
 
+    //DB接続情報
     constructor(tenantId) {
         this.type = 'sql'
-        this.provider = 'pg'
+        this.provider = 'mssql'
         this.tenantId = tenantId
         this.conf = {
-            host: '172.26.1.4',
-            user: 'postgres',
-            password: 'postgres',
+            server: '172.26.1.4',
+            user: 'sa',
+            password: 'Softbrain1',
             database: tenantId,
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+            }
         }
         
         this.pool = new Pool(this.conf)

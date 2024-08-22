@@ -9,19 +9,23 @@ export let Config = class{
         return instance        
     }
 
+    //接続情報
     constructor(){
         this.serverport = 3001,
         this.appserver = 'https://dev-solution.softbrain.co.jp/',
-        this.apikey = 'b8c64545-de5e-4bf0-81f3-e0f8affcdbba',
+        this.apikey = '7d33251c-2f42-4299-b02b-063702706561',
         this.datasrc = {
-            host: '172.26.1.4',
-            user: 'postgres',
-            password: 'postgres',
+            server: '172.26.1.4',
+            user: 'sa',
+            password: 'Softbrain1',
             database: 'ncs',
-            schema: 'ncs',
             max: 20,
             idleTimeoutMillis: 60000,
             connectionTimeoutMillis: 60000,
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+            }
         }
         this.logs = {        
             appenders: { 

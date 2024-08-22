@@ -40,6 +40,14 @@ export let NameCollectService = class {
     return retval
   }
 
+  /**
+   * 削除済みかつ、指定の日付以降の連携対象となっているクエリ側のIDをすべて取得する
+   * @param {*} provider 連携中のMA側のサービス名
+   * @param {*} target ターゲットのシート名
+   * @param {*} after 検索対象の日付
+   * @param {*} page 
+   * @returns 
+   */
   async getDeleteRequiredQueryIds(provider, target, after, page){
     let querySource = QuerySource.getInstance(provider, this.tenantId)
 
@@ -55,7 +63,7 @@ export let NameCollectService = class {
         throw er
       }
       
-      cond = `${cond} and (targetvalue ->> 'timestamp')::bigint > ${longa}` 
+      cond = `${cond} and CAST(JSON_VALUE(targetvalue, '$.timestamp') AS BIGINT) > ${longa}` 
     }
 
     await querySource.loadIdMap(target, cond, page)
@@ -74,6 +82,14 @@ export let NameCollectService = class {
     return retval
   }
   
+  /**
+   * クエリ側で未登録、かつ指定の日付以降の連携対象となっているクエリ側のIDをすべて取得する
+  * @param {*} provider 連携中のMA側のサービス名
+   * @param {*} target ターゲットのシート名
+   * @param {*} after 検索対象の日付 
+   * @param {*} page 
+   * @returns 
+   */
   async getRegisteredRequired(provider, target, after, page){
     let querySource = QuerySource.getInstance(provider, this.tenantId)
 
@@ -89,7 +105,7 @@ export let NameCollectService = class {
         throw er
       }
       
-      cond = `${cond} and (targetvalue ->> 'timestamp')::bigint > ${longa}` 
+      cond = `${cond} and CAST(JSON_VALUE(targetvalue, '$.timestamp') AS BIGINT) > ${longa}` 
     }
 
     await querySource.loadIdMap(target, cond, page)
@@ -108,6 +124,10 @@ export let NameCollectService = class {
     return retval
   }
 
+  /**
+   * Query側で新規登録が完了した情報についてIDのペアを連携して登録する
+   * @param {*} req 
+   */
   async registerIdPair(req){
     let querySource = QuerySource.getInstance(req.provider, this.tenantId)
     let idmap = querySource.initIdMap(req.target)
@@ -149,6 +169,13 @@ export let NameCollectService = class {
     return result
   }
 
+  /**
+   * マッチング依頼（queryNameMatch）により、クエリー側より更新情報を取得し、
+   * 名寄せ対象（TARGET）側でも連携対象項目が更新された名刺情報を、マージして返却する。
+   * @param {*} req 
+   * @param {*} page 
+   * @returns 
+   */
   async update(req, page){
     let provider = req.provider
     let target = req.target
@@ -181,7 +208,8 @@ export let NameCollectService = class {
       }
     }
 
-    await querySource.loadColMap(target, `sync = true`)
+    //sqlserverでは真理値はbit型のため、1(true)をsyncに入れる
+    await querySource.loadColMap(target, `sync = 1`)
     let colmap = querySource.getColMap(target).colmap
 
     let mergedinfolist = []
@@ -207,20 +235,22 @@ export let NameCollectService = class {
           mergedinfo = Object.assign(mergedinfo, {dir: 'b', record: {}})
           for ( let col of colmap ){
             let mcolval = m.mergedvalue.record[col.tname]
-            let pcolmod = mcolval == pmod.param[col.pname]
-            let tcolmod = mcolval == m.targetvalue[col.tname]
+            // pmod.param[col.pname] と m.targetvalue[col.tname] との比較結果を取得
+            let pcolmod = mcolval === pmod.param[col.pname];
+            let tcolmod = mcolval === m.targetvalue[col.tname];
 
-            if ( pcolmod == true && tcolmod == true ){
-              if (pmod.timestamp > m.targetvalue.timestamp){
-                mergedinfo.record[col.tname] = pmod.param[col.pname]
-              }else{
-                mergedinfo.record[col.tname] = m.targetvalue[col.tname]
-              }
-
-            }else if ( pcolmod == true && tcolmod == false ){
-              mergedinfo.record[col.tname] = pmod.param[col.pname]
-            }else if ( pcolmod == false && tcolmod == true ){
-              mergedinfo.record[col.tname] = m.targetvalue[col.tname]
+            // 条件に基づいて mergedinfo.record[col.tname] を設定
+            if (pcolmod && tcolmod) {
+                // pcolmod と tcolmod の両方が true の場合
+                mergedinfo.record[col.tname] = (pmod.timestamp > m.targetvalue.timestamp)
+                    ? pmod.param[col.pname]
+                    : m.targetvalue[col.tname];
+            } else if (pcolmod) {
+                // pcolmod が true で tcolmod が false の場合
+                mergedinfo.record[col.tname] = pmod.param[col.pname];
+            } else if (tcolmod) {
+                // pcolmod が false で tcolmod が true の場合
+                mergedinfo.record[col.tname] = m.targetvalue[col.tname];
             }
           }
         }
@@ -245,6 +275,7 @@ export let NameCollectService = class {
     return result
   }
 
+  //マッチング
   async match(req) {
     let tlist = req.target
 

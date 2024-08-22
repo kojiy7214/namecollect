@@ -26,12 +26,10 @@ export let IdMap = class{
 
     async updateNullPid(pid, tid){
         let sql = `
-SET search_path TO 'ncs';
-UPDATE idmap
+UPDATE ncs.idmap
 SET pid = '${pid}'
 WHERE
     provider = '${this.provider}'
-    and provider = '${this.provider}'
     and target = '${this.target}'
     and tenant = '${this.tenantId}'
     and tid = '${tid}'
@@ -42,29 +40,30 @@ WHERE
 
     async save(){
         //UPSERT idmap
-        let upsert = `
-SET search_path TO 'ncs';
-INSERT INTO idmap (provider, target, pid, tid, targetvalue, tenant, mergedvalue, "option")
-VALUES ${
-    function fn(){
+        //-- INSERT文とMERGE文を使用
+let upsert = `MERGE ncs.idmap AS target
+USING (VALUES
+    ${function fn(){
         let retval = ''
-        for ( let pid in this.idmap ){
-            for ( let tid in this.idmap[pid]){
+        for (let pid in this.idmap){
+            for (let tid in this.idmap[pid]){
                 let e = this.idmap[pid][tid]
-                retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : 'null'},  ${e.tid ? `'${e.tid}'` : 'null'}, ${e.targetvalue ? `'${JSON.stringify(e.targetvalue)}'::jsonb` : 'null'}, '${this.tenantId}', ${e.mergedvalue ? `'${JSON.stringify(e.mergedvalue)}'::jsonb` : 'null'}, ${e.option ? `'${JSON.stringify(e.option)}'::jsonb` : 'null'}),` + "\r\n"
+                retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : 'NULL'},  ${e.tid ? `'${e.tid}'` : 'NULL'}, ${e.targetvalue ? `'${JSON.stringify(e.targetvalue)}'` : 'NULL'}, '${this.tenantId}', ${e.mergedvalue ? `'${JSON.stringify(e.mergedvalue)}'` : 'NULL'}, ${e.option ? `'${JSON.stringify(e.option)}'` : 'NULL'})` + "\r\n"
             }
         }
-        return retval = retval.slice(0, -3)
-    }.apply(this)
-}
-ON CONFLICT(provider, target, pid, tenant) DO
-UPDATE SET 
-    tid = excluded.tid,
-    targetvalue = coalesce(excluded.targetvalue, idmap.targetvalue),
-    mergedvalue = coalesce(excluded.mergedvalue, idmap.mergedvalue),
-    "option" = coalesce(excluded.mergedvalue, idmap.mergedvalue)
-    ;
-        `
+        return retval.slice(0, -2)
+    }.apply(this)}
+) AS source (provider, target, pid, tid, targetvalue, tenant, mergedvalue, [option])
+ON (target.provider = source.provider AND target.target = source.target AND target.pid = source.pid AND target.tenant = source.tenant)
+WHEN MATCHED THEN
+    UPDATE SET 
+        target.tid = source.tid,
+        target.targetvalue = COALESCE(source.targetvalue, target.targetvalue),
+        target.mergedvalue = COALESCE(source.mergedvalue, target.mergedvalue),
+        target.[option] = COALESCE(source.[option], target.[option])
+WHEN NOT MATCHED THEN
+    INSERT (provider, target, pid, tid, targetvalue, tenant, mergedvalue, [option])
+    VALUES (source.provider, source.target, source.pid, source.tid, source.targetvalue, source.tenant, source.mergedvalue, source.[option]);`    
 
     await NCSDao.getInstance().execute(upsert)
 
@@ -97,11 +96,10 @@ UPDATE SET
 
         condition = condition ? condition : '1=1'
         let sql = `
-SET search_path TO 'ncs';
 SELECT 
-    pid, tid, targetlist, targetstatus, targetvalue, mergedvalue, option
+    pid, tid, targetlist, targetstatus, targetvalue, mergedvalue, [option]
 FROM
-    idmap
+    ncs.idmap
 WHERE
     provider = '${this.provider}'
     and target = '${this.target}'

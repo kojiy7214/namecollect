@@ -1,181 +1,221 @@
-import pg from 'pg'
+// import pg from 'pg'
+import mssql from 'mssql'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
 
-const { Pool } = pg
+// const { Pool } = pg
 
 export let CustomerRemix = class {
     static instance
     static alias2DB = {
         table: {
-            default:"customer",
-            normalizer: null},
-        id:{
-            default:"customer.company_code::text as id",
+            default: "customer",
+            normalizer: null
+        },
+        id: {
+            default: "CAST(customer.company_code AS VARCHAR(MAX)) AS id",
             normalizer: null,
             apicode: 318,
             type: "num"
         },
-        businessCategory:{
-            default:"customer.business_category::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
-        },
-        companyName:{
-            default:"customer.company_name::text",
+        businessCategory: {
+            default: "CAST(customer.business_category AS VARCHAR(MAX)) AS businessCategory",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 301,
             type: "text"
         },
-        companyKana:{
-            default:"customer.company_kana::text",
+        companyName: {
+            default: "CAST(customer.company_name AS VARCHAR(MAX)) AS companyName",
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            apicode: 301,
+            type: "text"
+        },
+        companyKana: {
+            default: "CAST(customer.company_kana AS VARCHAR(MAX)) AS companyKana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 302,
             type: "text"
         },
-        zipcodeC:{
-            default:"customer.zipcode::text",
+        zipcodeC: {
+            default: "CAST(customer.zipcode AS VARCHAR(MAX)) AS zipcodeC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 303,
             type: "text"
         },
-        addressC:{
-            default:"customer.address::text",
+        addressC: {
+            default: "CAST(customer.address AS VARCHAR(MAX)) AS addressC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 304,
             type: "text"
         },
-        phoneNoC:{
-            default:"customer.tel_no::text",
+        phoneNoC: {
+            default: "CAST(customer.tel_no AS VARCHAR(MAX)) AS phoneNoC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 305,
             type: "text"
         },
-        telNo2:{
-            default:"customer.tel_no_2::text",
+        telNo2: {
+            default: "CAST(customer.tel_no_2 AS VARCHAR(MAX)) AS telNo2",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 306,
             type: "text"
         },
-        faxNoC:{
-            default:"customer.fax_no::text",
+        faxNoC: {
+            default: "CAST(customer.fax_no AS VARCHAR(MAX)) AS faxNoC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 307,
             type: "text"
         },
-        urlC:{
-            default:"customer.hp_url::text",
+        urlC: {
+            default: "CAST(customer.hp_url AS VARCHAR(MAX)) AS urlC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 308,
             type: "text"
         },
-        stockExchange:{
-            default:"customer.stock_exchange::text",
+        stockExchange: {
+            default: "CAST(customer.stock_exchange AS VARCHAR(MAX)) AS stockExchange",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 310,
             type: "num"
         },
-        presidentName:{
-            default:"customer.president_name::text",
+        presidentName: {
+            default: "CAST(customer.president_name AS VARCHAR(MAX)) AS presidentName",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 311,
             type: "text"
         },
-        presidentKana:{
-            default:"customer.president_kana::text",
+        presidentKana: {
+            default: "CAST(customer.president_kana AS VARCHAR(MAX)) AS presidentKana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 312,
             type: "text"
         },
-        establishDate:{
-            default:"customer.establish_date::text",
+        establishDate: {
+            default: "CAST(customer.establish_date AS VARCHAR(MAX)) AS establishDate",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 313,
             type: "date"
         },
-        capital:{
-            default:"customer.capital::text",
+        capital: {
+            default: "CAST(customer.capital AS VARCHAR(MAX)) AS capital",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 315,
             type: "num"
         },
-        employeeNum:{
-            default:"customer.employee_num::text",
+        employeeNum: {
+            default: "CAST(customer.employee_num AS VARCHAR(MAX)) AS employeeNum",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 316,
             type: "num"
         },
-        noteC:{
-            default:"customer.note::text",
+        noteC: {
+            default: "CAST(customer.note AS VARCHAR(MAX)) AS noteC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 309,
             type: "text"
         },
-        validateFlagC:{
-            default:"customer.validate_flag::text",
+        validateFlagC: {
+            default: "CAST(customer.validate_flag AS VARCHAR(MAX)) AS validateFlagC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 335,
             type: "num"
         },
-        agencyFlag:{
-            default:"customer.establish_date::text",
+        agencyFlag: {
+            default: "CAST(customer.establish_date AS VARCHAR(MAX)) AS agencyFlag",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 338,
             type: "num"
         },
-        industryKindCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 340 and es.select_code = INDUSTRY_KIND_CODE)) postTypeCode",
+        industryKindCode: {
+            default: `
+            (
+                SELECT user_message 
+                FROM system_message_ja_jp 
+                WHERE message_key = (
+                    SELECT es.select_data 
+                    FROM ext_select es 
+                    WHERE es.extension_code = 340 
+                      AND es.select_code = INDUSTRY_KIND_CODE
+                )
+            ) AS industryKindCode
+            `,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 340,
             type: "select"
         },
-        customerLevel:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select cl.level_name from customer_level cl where cl.customer_level = customer.customer_level))",
+        customerLevel: {
+            default: `
+            (
+                SELECT user_message 
+                FROM system_message_ja_jp 
+                WHERE message_key = (
+                    SELECT cl.level_name 
+                    FROM customer_level cl 
+                    WHERE cl.customer_level = customer.customer_level
+                )
+            ) AS customerLevel
+            `,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 341,
             type: "sql",
-            sql: "SET search_path TO '${tenant}'; SELECT customer_level as val FROM customer_level left join system_message_ja_jp on customer_level.\"level_name\" = message_key where default_message = '${val}'"
+            sql: `
+            SELECT customer_level AS val
+            FROM customer_level 
+            LEFT JOIN system_message_ja_jp 
+                ON customer_level.level_name = message_key 
+            WHERE default_message = @val;
+            `
         },
-        customerRankCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 339 and es.select_code = CUSTOMER_RANK_CODE)) customerRankCode",
+        customerRankCode: {
+            default: `
+            (
+                SELECT user_message 
+                FROM system_message_ja_jp 
+                WHERE message_key = (
+                    SELECT es.select_data 
+                    FROM ext_select es 
+                    WHERE es.extension_code = 339 
+                      AND es.select_code = CUSTOMER_RANK_CODE
+                )
+            ) AS customerRankCode
+            `,
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 339,
             type: "select"
         },
-        system_reg_date:{
-            default:"customer.regist_date",
+        system_reg_date: {
+            default: "customer.regist_date AS system_reg_date",
             normalizer: null
         },
-        system_upd_date:{
-            default:"customer.refix_date",
+        system_upd_date: {
+            default: "customer.refix_date AS system_upd_date",
             normalizer: null
         },
-        extension:{
+        extension: {
             default: `
- set search_path to '@tenant';
-
-select 
- col_name as ext_colname,
-case
- when ex_type = 0 then 'text'
- when ex_type = 1 then 'select'
- when ex_type = 2 then 'date'
- when ex_type = 3 then 'num'
- when ex_type = 4 then 'text'
- when ex_type = 5 then 'decimal'
- when ex_type = 6 then 'checkbox'
- when ex_type = 7 then 'text'
- when ex_type = 8 then 'text'
- when ex_type = 9 then 'text'
- when ex_type = 11 then 'date'
- else 'err'
-end ext_type
-from extension_info 
-where
-	ex_belong = 3
-	and extension_code::text = '@apicode'           
+            SELECT 
+                col_name AS ext_colname,
+                CASE
+                    WHEN ex_type = 0 THEN 'text'
+                    WHEN ex_type = 1 THEN 'select'
+                    WHEN ex_type = 2 THEN 'date'
+                    WHEN ex_type = 3 THEN 'num'
+                    WHEN ex_type = 4 THEN 'text'
+                    WHEN ex_type = 5 THEN 'decimal'
+                    WHEN ex_type = 6 THEN 'checkbox'
+                    WHEN ex_type = 7 THEN 'text'
+                    WHEN ex_type = 8 THEN 'text'
+                    WHEN ex_type = 9 THEN 'text'
+                    WHEN ex_type = 11 THEN 'date'
+                    ELSE 'err'
+                END AS ext_type
+            FROM @tenant.extension_info 
+            where
+            ex_belong = 3
+            AND CAST(extension_code AS NVARCHAR(MAX)) = @apicode;
             `
         }
-    }
+    }    
   
     static getInstance(tenantId) {
       /*return CustomerRemix.instance
@@ -187,19 +227,24 @@ where
 
     constructor(tenantId) {
         this.type = 'sql'
-        this.provider = 'pg'
+        this.provider = 'mssql'
         this.tenantId = tenantId
         this.conf = {
-            host: '172.26.1.4',
-            user: 'postgres',
-            password: 'postgres',
+            server: '172.26.1.4',
+            user: 'sa',
+            password: 'Softbrain1',
             database: tenantId,
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+            }
         }
         
-        this.pool = new Pool(this.conf)
+        this.pool = new mssql.ConnectionPool(this.conf);
+        this.poolConnect = this.pool.connect();
     } 
 
     destructor(){
@@ -213,9 +258,10 @@ where
     async query(q) {
         //QUERY内の置換対象文字列を置き換え
         for ( let key in CustomerRemix.alias2DB ){
+            const rep_val = CustomerRemix.alias2DB[key].value.replace(/\s+AS\s+\w+$/i, '')
             let replaceTo = CustomerRemix.alias2DB[key].normalizer ?  
-            `regexp_replace(${CustomerRemix.alias2DB[key].value}, '${CustomerRemix.alias2DB[key].normalizer[0]}', '${CustomerRemix.alias2DB[key].normalizer[1]}', 'g')` : 
-            CustomerRemix.alias2DB[key].value
+            this.generateNestedReplaceSQL(rep_val, CustomerRemix.alias2DB[key].normalizer[0], CustomerRemix.alias2DB[key].normalizer[1]) :
+            rep_val;
             q = q.replaceAll("${" + key + "}", replaceTo)
             q = q.replaceAll("${" + key + "_default}", CustomerRemix.alias2DB[key].value)
         }
@@ -234,12 +280,12 @@ where
             if ( result == undefined) continue
 
             //modify alias2DB
-            CustomerRemix.alias2DB[apicode] ={
-                default:`customer.${result.ext_colname}::text as "${ext[1]}"`,
-                value: `customer.${result.ext_colname}::text as "${ext[1]}"`,
+            CustomerRemix.alias2DB[apicode] = {
+                default: `CAST(customer.${result.ext_colname} AS VARCHAR(MAX)) AS "${ext[1]}"`,
+                value: `CAST(customer.${result.ext_colname} AS VARCHAR(MAX)) AS "${ext[1]}"`,
                 apicode: ext[1],
                 type: result.ext_type
-            }
+            }            
 
             //modify query
             q = q.replaceAll("${" + apicode + "_default}", CustomerRemix.alias2DB[apicode].value)
@@ -248,14 +294,59 @@ where
         //remove unmatched select columns
         q = q.replaceAll(/(,\$\{.+_default\})/g, '--$1')
         
-        const client = await this.pool.connect()
-        client.query('BEGIN')
-        const result = await client.query(q)
-        client.query('COMMIT')
-        const rows = result[1].rows
-        client.release()
+        // データベース接続を待機
+        await this.poolConnect;
+        let transactionObj = null;
+        let result;
 
-        return rows[0]
+        try {
+            // トランザクションオブジェクトの作成
+            transactionObj = new mssql.Transaction(this.pool);
+            
+            // トランザクションの開始
+            await transactionObj.begin();
+
+            // トランザクションが存在する場合はそのトランザクションを使い、存在しない場合は新しいリクエストを作成
+            const request = transactionObj 
+                ? new mssql.Request(transactionObj) 
+                : new mssql.Request();
+
+            // クエリの実行
+            result = await request.query(q);
+            
+            // クエリの成功を確認し、トランザクションをコミット
+            await transactionObj.commit();
+
+        } catch (e) {
+            if (transactionObj) {
+                await transactionObj.rollback();
+            }
+            throw new Error(`SQL exec failed: ${q}, error: ${e.message}`);
+        }
+
+        return result.recordset;
+    }
+
+    // 正規表現からreplace文を生成する
+    generateNestedReplaceSQL(targetString, regexPattern, replaceWith) {
+        // 正規表現のパターンから、文字を抽出します。
+        let pattern = regexPattern[0];
+        let replacement = regexPattern[1];
+    
+        // エスケープされた文字を取り出します
+        let charactersToReplace = [...new Set(pattern.replace(/[\[\]\\]/g, ''))];
+        
+        // 重複する文字は取り除きます
+        let sql = targetString;
+        
+        // 文字ごとにREPLACE文を作成し、入れ子にします
+        for (let char of charactersToReplace) {
+            // 特殊文字をエスケープする
+            let escapedChar = char.replace(/'/g, "''");
+            sql = `REPLACE(${sql}, '${escapedChar}', '${replacement}')`;
+        }
+    
+        return sql;
     }
 
     onMatch(query, param, colmap, result){
