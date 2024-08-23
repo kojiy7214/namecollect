@@ -2,6 +2,7 @@
 import mssql from 'mssql'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
+import { SQLBuilder } from '../../util/SQLBuilder.js'
 
 // const { Pool } = pg
 
@@ -212,7 +213,7 @@ export let CustomerRemix = class {
             FROM @tenant.extension_info 
             where
             ex_belong = 3
-            AND CAST(extension_code AS NVARCHAR(MAX)) = @apicode;
+            AND CAST(extension_code AS NVARCHAR(MAX)) = '@apicode';
             `
         }
     }    
@@ -259,8 +260,9 @@ export let CustomerRemix = class {
         //QUERY内の置換対象文字列を置き換え
         for ( let key in CustomerRemix.alias2DB ){
             const rep_val = CustomerRemix.alias2DB[key].value.replace(/\s+AS\s+\w+$/i, '')
+            let sql = new SQLBuilder()
             let replaceTo = CustomerRemix.alias2DB[key].normalizer ?  
-            this.generateNestedReplaceSQL(rep_val, CustomerRemix.alias2DB[key].normalizer[0], CustomerRemix.alias2DB[key].normalizer[1]) :
+            sql.generateNestedReplaceSQL(rep_val, CustomerRemix.alias2DB[key].normalizer) :
             rep_val;
             q = q.replaceAll("${" + key + "}", replaceTo)
             q = q.replaceAll("${" + key + "_default}", CustomerRemix.alias2DB[key].value)
@@ -325,29 +327,7 @@ export let CustomerRemix = class {
         }
 
         return result.recordset;
-    }
-
-    // 正規表現からreplace文を生成する
-    generateNestedReplaceSQL(targetString, regexPattern, replaceWith) {
-        // 正規表現のパターンから、文字を抽出します。
-        let pattern = regexPattern[0];
-        let replacement = regexPattern[1];
-    
-        // エスケープされた文字を取り出します
-        let charactersToReplace = [...new Set(pattern.replace(/[\[\]\\]/g, ''))];
-        
-        // 重複する文字は取り除きます
-        let sql = targetString;
-        
-        // 文字ごとにREPLACE文を作成し、入れ子にします
-        for (let char of charactersToReplace) {
-            // 特殊文字をエスケープする
-            let escapedChar = char.replace(/'/g, "''");
-            sql = `REPLACE(${sql}, '${escapedChar}', '${replacement}')`;
-        }
-    
-        return sql;
-    }
+    }  
 
     onMatch(query, param, colmap, result){
         query.param.companyCode = result.id

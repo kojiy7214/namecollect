@@ -2,6 +2,8 @@
 import mssql from 'mssql'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
+import { SQLBuilder } from '../../util/SQLBuilder.js'
+
 import log4js from 'log4js'
 
 // const { Pool } = pg
@@ -12,78 +14,78 @@ export let BusinessPersonRemix = class {
     static instance
     static alias2DB = {
         table: {
-            default:"business_person LEFT OUTER JOIN customer ON business_person.company_code = customer.company_code",
+            default:"business_person LEFT OUTER JOIN @tenant.customer ON business_person.company_code = customer.company_code",
             normalizer: null},
         id:{
-            default:"business_person.business_person_id::text as id",
+            default:"CAST(business_person.business_person_id AS VARCHAR(MAX)) as id",
             normalizer: null
         },
         name:{
-            default:"business_person.person_name::text",
+            default:"CAST(business_person.person_name AS VARCHAR(MAX)) as name",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 903,
             type: "text"
         },
         nameKana:{
-            default:"business_person.person_kana::text",
+            default:"CAST(business_person.person_kana AS VARCHAR(MAX)) as kana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 918,
             type: "text"
         }, 
         companyName:{
-            default:"customer.company_name::text",
+            default:"CAST(customer.company_name AS VARCHAR(MAX)) as companyName",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         }, 
         department:{
-            default:"business_person.depart_name::text",
+            default:"CAST(business_person.depart_name AS VARCHAR(MAX)) as department",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 904,
             type: "text"
         }, 
         post:{
-            default:"business_person.post::text",
+            default:"CAST(business_person.post AS VARCHAR(MAX)) as post",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 905,
             type: "text"
         }, 
         email:{
-            default:"business_person.e_mail::text",
+            default:"CAST(business_person.email AS VARCHAR(MAX)) as email",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 914,
             type: "text"
         }, 
         mob_e_mail:{
-            default:"business_person.e_mail::text",
+            default:"CAST(business_person.e_mail AS VARCHAR(MAX)) as mob_e_mail",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 913,
             type: "text"
         },
         phoneNoB:{
-            default:"business_person.tel_no::text",
+            default:"CAST(business_person.tel_no AS VARCHAR(MAX)) as phoneNoB",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 909,
             type: "text"
         }, 
         mobilePhoneNo:{
-            default:"business_person.mob_no::text",
+            default:"CAST(business_person.mob_no AS VARCHAR(MAX)) as mobilePhoneNo",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 912,
             type: "text"
         }, 
         interphoneNo:{
-            default:"business_person.interphone_no::text",
+            default:"CAST(business_person.interphone_no AS VARCHAR(MAX)) as interphoneNo",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 910,
             type: "text"
         }, 
         faxNoB:{
-            default:"business_person.fax_no::text",
+            default:"CAST(business_person.fax_no AS VARCHAR(MAX)) as faxNoB",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 911,
             type: "text"
         }, 
         zipcode: {
-            default:"zipcode::text",
+            default:"CAST(zipcode AS VARCHAR(MAX)) as zipcode",
             normalizer: ["[ー‐―－\\-〒\\s]", ""],
             apicode: 906,
             type: "text"
@@ -96,37 +98,37 @@ export let BusinessPersonRemix = class {
             type: "text"
         },
         addressStreetB: {
-            default:"business_person.address::text",
+            default:"CAST(business_person.address AS VARCHAR(MAX))",
             normalizer: ["[ー‐―－\\-〒\\s]", "-"],
             apicode: 907,
             type: "text"
         },
         addressBuildingB: {
-            default: "business_person.street_number::text",
+            default:"CAST(business_person.street_number AS VARCHAR(MAX))",
             normalizer: ["[ー‐―－\\-\\s]", ""],
             apicode: 945,
             type: "text"
         },
         urlB:{
-            default:"business_person.url::text",
+            default:"CAST(business_person.url AS VARCHAR(MAX)) as urlB",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 915,
             type: "text"
         }, 
         noteB:{
-            default:"business_person.note::text",
+            default:"CAST(business_person.note AS VARCHAR(MAX)) as noteB",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 916,
             type: "text"
         },
         serviceFlag:{
-            default:"business_person.service_flag::text",
+            default:"CAST(business_person.service_flag AS VARCHAR(MAX)) as serviceFlag",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 925,
             type: "text"
         },
         validateFlagB:{
-            default:"business_person.validate_flag::text",
+            default:"CAST(business_person.validate_flag AS VARCHAR(MAX)) as validateFlagB",
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 927,
             type: "text"
@@ -144,94 +146,104 @@ export let BusinessPersonRemix = class {
             type: "select"
         },
         companyCode:{
-            default:"customer.company_code::text",
+            default:"CAST(customer.company_code AS VARCHAR(MAX)) as companyCode",
             normalizer: null,
             apicode: 902,
             type: "num"
         },
         businessCategory:{
-            default:"customer.business_category::text",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
-        },
-        companyName:{
-            default:"customer.company_name::text",
+            default:"CAST(customer.business_category AS VARCHAR(MAX)) as businessCategory",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         companyKana:{
-            default:"customer.company_kana::text",
+            default:"CAST(customer.company_kana AS VARCHAR(MAX)) as companyKana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         zipcodeC:{
-            default:"customer.zipcode::text",
+            default:"CAST(customer.zipcode AS VARCHAR(MAX)) as zipcodeC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         addressC:{
-            default:"customer.address::text",
+            default:"CAST(customer.address AS VARCHAR(MAX)) as addressC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         phoneNoC:{
-            default:"customer.tel_no::text",
+            default:"CAST(customer.tel_no AS VARCHAR(MAX)) as phoneNoC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         telNo2:{
-            default:"customer.tel_no_2::text",
+            default:"CAST(customer.tel_no_2 AS VARCHAR(MAX)) as telNo2",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         faxNoC:{
-            default:"customer.fax_no::text",
+            default:"CAST(customer.fax_no AS VARCHAR(MAX)) as faxNoC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         urlC:{
-            default:"customer.hp_url::text",
+            default:"CAST(customer.hp_url AS VARCHAR(MAX)) as urlC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         stockExchange:{
-            default:"customer.stock_exchange::text",
+            default:"CAST(customer.stock_exchange AS VARCHAR(MAX)) as stockExchange",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         presidentName:{
-            default:"customer.president_name::text",
+            default:"CAST(customer.president_name AS VARCHAR(MAX)) as presidentName",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         presidentKana:{
-            default:"customer.president_kana::text",
+            default:"CAST(customer.president_kana AS VARCHAR(MAX)) as presidentKana",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         establishDate:{
-            default:"customer.establish_date::text",
+            default:"CAST(customer.establish_date AS VARCHAR(MAX)) as establishDate",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         capital:{
-            default:"customer.capital::text",
+            default:"CAST(customer.capital AS VARCHAR(MAX)) as capital",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         employeeNum:{
-            default:"customer.employee_num::text",
+            default:"CAST(customer.employee_num AS VARCHAR(MAX)) as employeeNum",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         noteC:{
-            default:"customer.note::text",
+            default:"CAST(customer.note AS VARCHAR(MAX)) as noteC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         validateFlagC:{
-            default:"customer.validate_flag::text",
+            default:"CAST(customer.validate_flag AS VARCHAR(MAX)) as validateFlagC",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
         agencyFlag:{
-            default:"customer.establish_date::text",
+            default:"CAST(customer.establish_date AS VARCHAR(MAX)) as agencyFlag",
             normalizer: ["[ー‐―－\\-\\s]", "ー"]
         },
-        industryKindCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 340 and es.select_code = INDUSTRY_KIND_CODE)) postTypeCode",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+        industryKindCode: {
+            default: `
+            (SELECT user_message FROM system_message_ja_jp WHERE message_key = 
+                (SELECT es.select_data FROM ext_select es WHERE es.extension_code = 340 AND es.select_code = INDUSTRY_KIND_CODE)
+            ) AS industryKindCode`,
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            apicode: 340,
+            type: "select"
         },
-        customerRankCode:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select es.select_data from ext_select es where es.extension_code = 339 and es.select_code = CUSTOMER_RANK_CODE)) customerRankCode",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+        customerLevel: {
+            default: `(SELECT user_message FROM system_message_ja_jp WHERE message_key = 
+                        (SELECT cl.level_name FROM customer_level cl WHERE cl.customer_level = customer.customer_level)
+                    ) AS customerLevel`,
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            apicode: 341,
+            type: "sql",
+            sql: `SELECT customer_level AS val FROM customer_level LEFT JOIN system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = @val;`
         },
-        customerLevel:{
-            default:"(select user_message from system_message_ja_jp where message_key = (select cl.level_name from customer_level cl where cl.customer_level = customer.customer_level))",
-            normalizer: ["[ー‐―－\\-\\s]", "ー"]
+        customerRankCode: {
+            default: `(SELECT user_message FROM system_message_ja_jp WHERE message_key = 
+                        (SELECT es.select_data FROM ext_select es WHERE es.extension_code = 339 AND es.select_code = CUSTOMER_RANK_CODE)
+            ) AS customerRankCode`,
+            normalizer: ["[ー‐―－\\-\\s]", "ー"],
+            apicode: 339,
+            type: "select"
         },
         system_reg_date:{
             default:"business_person.regist_date",
@@ -262,7 +274,7 @@ end ext_type
 from @tenant.extension_info 
 where
 	ex_belong = 9
-	and CAST(extension_code AS NVARCHAR(MAX)) = @apicode;        
+	and CAST(extension_code AS NVARCHAR(MAX)) = '@apicode';        
             `
         }
     }
@@ -293,8 +305,10 @@ where
             }
         }
         
-        this.pool = new Pool(this.conf)
+        this.pool = new mssql.ConnectionPool(this.conf);
+        this.poolConnect = this.pool.connect();
     } 
+
 
     destructor(){
         this.pool.end()
@@ -307,11 +321,14 @@ where
     async query(q) {
         //QUERY内の置換対象文字列を置き換え
         for ( let key in BusinessPersonRemix.alias2DB ){
+            const rep_val = BusinessPersonRemix.alias2DB[key].value.replace(/\s+AS\s+\w+$/i, '')
+            let sql = new SQLBuilder()
             let replaceTo = BusinessPersonRemix.alias2DB[key].normalizer ?  
-            `regexp_replace(${BusinessPersonRemix.alias2DB[key].value}, '${BusinessPersonRemix.alias2DB[key].normalizer[0]}', '${BusinessPersonRemix.alias2DB[key].normalizer[1]}', 'g')` : 
-            BusinessPersonRemix.alias2DB[key].value
+            sql.generateNestedReplaceSQL(rep_val, BusinessPersonRemix.alias2DB[key].normalizer[0], BusinessPersonRemix.alias2DB[key].normalizer[1]) :
+            rep_val;
             q = q.replaceAll("${" + key + "}", replaceTo)
             q = q.replaceAll("${" + key + "_default}", BusinessPersonRemix.alias2DB[key].value)
+            q = q.replaceAll('@tenant', this.tenantId)
         }
         
         //apply extensions
@@ -342,14 +359,37 @@ where
         //remove unmatched select columns
         q = q.replaceAll(/(,\$\{.+_default\})/g, '--$1')
 
-        const client = await this.pool.connect()
-        client.query('BEGIN')
-        const result = await client.query(q)
-        client.query('COMMIT')
-        const rows = result[1].rows
-        client.release()
+        // データベース接続を待機
+        await this.poolConnect;
+        let transactionObj = null;
+        let result;
 
-        return rows[0]
+        try {
+            // トランザクションオブジェクトの作成
+            transactionObj = new mssql.Transaction(this.pool);
+            
+            // トランザクションの開始
+            await transactionObj.begin();
+
+            // トランザクションが存在する場合はそのトランザクションを使い、存在しない場合は新しいリクエストを作成
+            const request = transactionObj 
+                ? new mssql.Request(transactionObj) 
+                : new mssql.Request();
+
+            // クエリの実行
+            result = await request.query(q);
+            
+            // クエリの成功を確認し、トランザクションをコミット
+            await transactionObj.commit();
+
+        } catch (e) {
+            if (transactionObj) {
+                await transactionObj.rollback();
+            }
+            throw new Error(`SQL exec failed: ${q}, error: ${e.message}`);
+        }
+
+        return result.recordset;
     }
 
     onMatch(query, param, colmap, result){

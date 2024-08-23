@@ -81,4 +81,26 @@ ORDER BY
         return retval
     }
 
+    // 正規表現からreplace文を生成する
+    generateNestedReplaceSQL(targetString, regexPattern) {
+        // 正規表現のパターンから、文字を抽出します。
+        let pattern = regexPattern[0];
+        let replacement = regexPattern[1];
+    
+        // エスケープされた文字を取り出します
+        let charactersToReplace = [...new Set(pattern.replace(/[\[\]\\]/g, ''))];
+        
+        // 重複する文字は取り除きます
+        let sql = targetString;
+        
+        // 文字ごとにREPLACE文を作成し、入れ子にします
+        for (let char of charactersToReplace) {
+            // 特殊文字をエスケープする
+            let escapedChar = char.replace(/'/g, "''");
+            sql = `REPLACE(${sql}, '${escapedChar}', '${replacement}')`;
+        }
+    
+        return sql;
+    }
+
 }
