@@ -231,7 +231,7 @@ export let CustomerRemix = class {
         let retval 
         try{
             let result = await this.query(sql)
-            if ( ! result ){
+            if ( ! result || result.length == 0){
                 retval = undefined
             }else{
                 if ( result.ext_type == 'select' ){
@@ -273,12 +273,12 @@ export let CustomerRemix = class {
 
             let result = await this.query(sql)
 
-            if ( result == undefined) continue
+            if ( result == undefined || result.length == 0) continue
 
             //modify alias2DB
             CustomerRemix.alias2DB[apicode] = {
-                default: `CAST(customer.${result.ext_colname} AS VARCHAR(MAX)) AS "${ext[1]}"`,
-                value: `CAST(customer.${result.ext_colname} AS VARCHAR(MAX)) AS "${ext[1]}"`,
+                default: `CAST(customer.${result.columns.ext_colname.name} AS VARCHAR(MAX)) AS "${ext[1]}"`,
+                value: `CAST(customer.${result.columns.ext_colname.name} AS VARCHAR(MAX)) AS "${ext[1]}"`,
                 apicode: ext[1],
                 type: result.ext_type
             }            
@@ -364,7 +364,7 @@ export let CustomerRemix = class {
                     let sql = a.sql.replaceAll('$\{val\}', p).replaceAll('$\{tenant\}', this.tenantId)
                     let sqlresult = await this.query(sql)
                   
-                    if ( sqlresult == undefined){/*error*/}
+                    if ( sqlresult == undefined || sqlresult.length == 0){/*error*/}
                     let item = {}
                     item.column_code = a.apicode
                     item['num'] = parseInt(sqlresult.val)

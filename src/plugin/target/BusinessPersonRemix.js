@@ -327,7 +327,7 @@ where
         let retval 
         try{
             let result = await this.query(sql)
-            if ( ! result ){
+            if ( ! result || result.length == 0){
                 retval = undefined
             }else{
                 if ( result.ext_type == 'select' ){
@@ -369,7 +369,7 @@ where
 
             let result = await this.query(sql)
 
-            if ( result == undefined)continue
+            if ( result == undefined || result.length == 0) continue
 
             //modify alias2DB
             BusinessPersonRemix.alias2DB[apicode] ={
