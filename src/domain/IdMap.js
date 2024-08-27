@@ -48,10 +48,10 @@ USING (VALUES
         for (let pid in this.idmap){
             for (let tid in this.idmap[pid]){
                 let e = this.idmap[pid][tid]
-                retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : 'NULL'},  ${e.tid ? `'${e.tid}'` : 'NULL'}, ${e.targetvalue ? `'${JSON.stringify(e.targetvalue)}'` : 'NULL'}, '${this.tenantId}', ${e.mergedvalue ? `'${JSON.stringify(e.mergedvalue)}'` : 'NULL'}, ${e.option ? `'${JSON.stringify(e.option)}'` : 'NULL'})` + "\r\n"
+                retval = retval + `('${this.provider}', '${this.target}', ${e.pid ? `'${e.pid}'` : 'NULL'},  ${e.tid ? `'${e.tid}'` : 'NULL'}, ${e.targetvalue ? `'${e.targetvalue}'` : 'NULL'}, '${this.tenantId}', ${e.mergedvalue ? `'${e.mergedvalue}'` : 'NULL'}, ${e.option ? `'${e.option}'` : 'NULL'}),` + "\r\n"
             }
         }
-        return retval.slice(0, -2)
+        return retval.replace(/,\r\n$/, '');
     }.apply(this)}
 ) AS source (provider, target, pid, tid, targetvalue, tenant, mergedvalue, [option])
 ON (target.provider = source.provider AND target.target = source.target AND target.pid = source.pid AND target.tenant = source.tenant)
