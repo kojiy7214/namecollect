@@ -320,7 +320,7 @@ export let CustomerRemix = class {
             throw new Error(`SQL exec failed: ${q}, error: ${e.message}`);
         }
 
-        return result.recordset;
+        return result.recordset[0];
     }  
 
     onMatch(query, param, colmap, result){
