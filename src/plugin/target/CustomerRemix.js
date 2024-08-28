@@ -3,6 +3,7 @@ import mssql from 'mssql'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
 import { SQLBuilder } from '../../util/SQLBuilder.js'
+import { HttpsProxyAgent} from 'https-proxy-agent';
 
 // const { Pool } = pg
 
@@ -143,7 +144,7 @@ export let CustomerRemix = class {
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 341,
             type: "sql",
-            sql: `SELECT customer_level AS val FROM @tenant.customer_level LEFT JOIN @tenant.system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = @val;`
+            sql: "SELECT customer_level as val FROM ${tenant}.customer_level left join ${tenant}.system_message_ja_jp on customer_level.\"level_name\" = message_key where default_message = '${val}'"
         },
         customerRankCode: {
             default: `(SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
@@ -213,9 +214,10 @@ export let CustomerRemix = class {
                 trustServerCertificate: true,
             }
         }
-        
+
         this.pool = new mssql.ConnectionPool(this.conf);
         this.poolConnect = this.pool.connect();
+        this.proxy = new HttpsProxyAgent('http://172.21.252.1:12080');
     } 
 
     destructor(){
@@ -341,7 +343,8 @@ export let CustomerRemix = class {
                     let url = Config.getInstance().appserver + this.tenantId + `/rest/v1/entities/selectitems?obj_name=customer&column_code=${a.apicode}`
                     const response = await fetch(url, {
                         method: 'get',
-                        headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+                        headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey},
+                        agent: this.proxy
                     });
                     const data = await response.json()
            
@@ -364,7 +367,11 @@ export let CustomerRemix = class {
                     let sql = a.sql.replaceAll('$\{val\}', p).replaceAll('$\{tenant\}', this.tenantId)
                     let sqlresult = await this.query(sql)
                   
-                    if ( sqlresult == undefined || sqlresult.length == 0){/*error*/}
+                    if ( sqlresult == undefined || sqlresult.length == 0){
+                        console.log(sql)
+                        console.log(`${c}の値取得に失敗しました`)
+                        continue
+                    }
                     let item = {}
                     item.column_code = a.apicode
                     item['num'] = parseInt(sqlresult.val)
@@ -384,7 +391,8 @@ export let CustomerRemix = class {
         const response = await fetch(url, {
             method: 'post',
             body: JSON.stringify(body),
-            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey},
+            agent: this.proxy
         });
         
         let res 

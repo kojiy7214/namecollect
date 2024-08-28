@@ -3,6 +3,7 @@ import mssql from 'mssql'
 import fetch from 'node-fetch'
 import {Config} from '../../conf.js'
 import { SQLBuilder } from '../../util/SQLBuilder.js'
+import { HttpsProxyAgent} from 'https-proxy-agent';
 
 import log4js from 'log4js'
 
@@ -235,7 +236,7 @@ export let BusinessPersonRemix = class {
             normalizer: ["[ー‐―－\\-\\s]", "ー"],
             apicode: 341,
             type: "sql",
-            sql: `SELECT customer_level AS val FROM @tenant.customer_level LEFT JOIN @tenant.system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = @val;`
+            sql: "SELECT customer_level AS val FROM ${tenant}.customer_level LEFT JOIN ${tenant}.system_message_ja_jp ON customer_level.level_name = message_key WHERE default_message = '${val}';"
         },
         customerRankCode: {
             default: `(SELECT user_message FROM @tenant.system_message_ja_jp WHERE message_key = 
@@ -311,6 +312,7 @@ where
         
         this.pool = new mssql.ConnectionPool(this.conf);
         this.poolConnect = this.pool.connect();
+        this.proxy = new HttpsProxyAgent('http://172.21.252.1:12080');
     } 
 
 
@@ -445,7 +447,8 @@ where
         const response = await fetch(url, {
             method: 'put',
             body: JSON.stringify(body),
-            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey},
+            agent: this.proxy
         });
         const data = await response.json()
         retval.id = data.primarykey
@@ -467,7 +470,8 @@ where
                     let url = Config.getInstance().appserver + this.tenantId + `/rest/v1/entities/selectitems?obj_name=person&column_code=${a.apicode}`
                     const response = await fetch(url, {
                         method: 'get',
-                        headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+                        headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey},
+                        agent: this.proxy
                     });
                     const data = await response.json()
    
@@ -500,7 +504,8 @@ where
         const response = await fetch(url, {
             method: 'post',
             body: JSON.stringify(body),
-            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey}
+            headers: {'Content-Type': 'application/json', 'X-Auth-API-Token': Config.getInstance().apikey},
+            agent: this.proxy
         });
         let res 
         let data
