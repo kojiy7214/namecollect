@@ -70,8 +70,8 @@ WHEN NOT MATCHED THEN
     }
 
     add(pid, tid, targetlist, targetstatus, targetvalue, mergedvalue, option){
-        targetvalue = targetvalue ? {record:targetvalue, timestamp:Date.now()} : null
-        mergedvalue = mergedvalue ? {record:mergedvalue, timestamp:Date.now()} : null
+        targetvalue = targetvalue  ? `{"record":${targetvalue}, "timestamp":${Date.now()}}` : null
+        mergedvalue = mergedvalue ? `{"record":${mergedvalue}, "timestamp":${Date.now()}}` : null
 
         let val = {
             pid:pid, tid:tid,

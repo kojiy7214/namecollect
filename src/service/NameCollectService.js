@@ -317,14 +317,14 @@ export let NameCollectService = class {
             if ( match ){
               target.onMatch(q, normparam, map, match)
               result.match.push({queryId:q.id, targetId:match.id, param:match})
-              idmap.add(q.id, match.id, null, null, match, null)
+              idmap.add(q.id, match.id, null, null, JSON.stringify(match), null, null)
               break
             }
           }
           if (! match) {
             match = await target.onUnmatch(q, normparam, map, idmap)
             result.match.push({queryId:q.id, targetId:match.id, param:match})
-            idmap.add(q.id, match.id, null, null, match, null)
+            idmap.add(q.id, match.id, null, null, JSON.stringify(match), null, null)
           }
         }
       }
